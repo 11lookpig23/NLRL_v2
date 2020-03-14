@@ -16,3 +16,5 @@ def plottrain(res,repeat,total_step):
     plt.plot(range(gap),dicfreq[0],color = 'yellow')
     plt.savefig("trainres.png")
     plt.show()
+    plt.pause(1)
+    plt.close()
