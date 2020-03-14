@@ -132,7 +132,12 @@ class ReinforceLearner(object):
                 inputs = None
                 action_prob = [np.ones([self.env.action_n])/ self.env.action_n]
             action_prob = action_prob[0]
-            action_index = np.random.choice(range(self.env.action_n), p=action_prob)
+            
+            if self.env.__class__.__name__=='TicTacTeo':
+                print("It's TicTacToe-----------")
+                action_index = self.env.choose_action(action_prob)
+            else:
+                action_index = np.random.choice(range(self.env.action_n), p=action_prob)
             if self.state_encoding == "terms":
                 action = self.env.action_index2atom(action_index)
             elif self.state_encoding == "atoms":
@@ -337,6 +342,7 @@ class ReinforceLearner(object):
                     #    self.save(sess, path)
                     #pprint(log)
                 print("-"*20+"\n")
+        print("WE----HAVE----DISTANCE------",disli)
         return log["return"]
 
 class PPOLearner(ReinforceLearner):

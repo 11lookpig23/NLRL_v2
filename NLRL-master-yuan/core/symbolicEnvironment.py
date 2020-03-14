@@ -3,6 +3,8 @@ from core.clause import *
 from core.ilp import LanguageFrame
 import copy
 from random import choice, random
+from scipy.special import softmax
+
 
 
 class SymbolicEnvironment(object):
@@ -400,6 +402,43 @@ class TicTacTeo(SymbolicEnvironment):
         self.action_n = len(self.all_positions)
         self.state_dim = width**2
 
+    def choose_action(self,actprob):
+        def tuple2int(t):
+            return (int(t[0]), int(t[1]))
+        def norm(a,t):
+            for i in range(t):
+                a = a/np.sum(a)
+            return a
+        invalids = self.get_invalid()
+        for actidx in range(self.action_n):
+            ## 0,1,2,3,4...9
+            action = self.all_actions[actidx]
+            ## (0,0)(0,1)...
+            if tuple2int(action.terms) in invalids:
+                actprob[actidx]=0
+        actprob = actprob / np.sum(actprob)
+        actprob[np.isnan(actprob)] = 0
+        acts = np.sum(actprob)
+        if acts==0:
+            actprob = softmax(actprob)
+            valids = self.get_valid()
+            for actidx in range(self.action_n):
+            ## 0,1,2,3,4...9
+                action = self.all_actions[actidx]
+            ## (0,0)(0,1)...
+                if tuple2int(action.terms) in valids:
+                    return actidx
+        else:
+            actprob = norm(actprob,5)
+            if(sum(actprob)!=1):
+                actprob = norm(actprob,5)
+        action_index = np.random.choice(range(self.action_n), p=actprob)
+        action = self.all_actions[action_index]
+        return action_index
+
+    def get_invalid(self):
+        return [(x,y) for x,y in self.all_positions if self._state[x,y]!=0]
+
     def next_step(self, action):
         def tuple2int(t):
             return (int(t[0]), int(t[1]))
@@ -410,6 +449,8 @@ class TicTacTeo(SymbolicEnvironment):
         valids = self.get_valid()
         if tuple2int(action.terms) in valids:
             self._state[tuple2int(action.terms)] = 1
+        else:
+            print("INVAILD------STEPS------------")
         self.random_move(self.know_valid_pos)
         return reward, finished
 
@@ -467,7 +508,7 @@ class TicTacTeo(SymbolicEnvironment):
             return 0, True
         return 0, False
 
-        def vary(self,type):
+    def vary(self,type):
         if type == "n":
             width = 3#np.zeros([3,3])
         return TicTacTeo(width)
