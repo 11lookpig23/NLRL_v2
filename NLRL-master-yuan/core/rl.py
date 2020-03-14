@@ -315,7 +315,7 @@ class ReinforceLearner(object):
             self.setup_train(sess)
             self.minibatch_buffer = self.get_minibatch_buffer(sess, batch_size=self.batch_size,
                                                               end_by_episode=self.end_by_episode)
-            resl = self.agent.get_predicate_definition(sess, Predicate("move", 2), threshold=-200000.0)
+            resl = self.agent.get_predicate_definition(sess, Predicate("place", 2), threshold=-200000.0)
             weightall0 = [x[0] for x in resl]
             print("weightal0-==============================================-")
             disli = []
@@ -324,7 +324,7 @@ class ReinforceLearner(object):
                 print("-"*20)
                 print("step "+str(i)+"return is "+str(log["return"]))
                 if (i+1)%self.log_steps==0:
-                    resl = self.agent.get_predicate_definition(sess, Predicate("move", 2), threshold=-200000.0)
+                    resl = self.agent.get_predicate_definition(sess, Predicate("place", 2), threshold=-200000.0)
                     weightall1 = [x[0] for x in resl]
                     print("weightal1--===========================================--")
                     print("++++++++++++++++++++++++++W--E--I--G--H--T++++++++++++++++++++++++++++")
