@@ -4,6 +4,7 @@ from collections import namedtuple
 import pickle
 import json
 import numpy as np
+from core.plotana import plottrain
 
 def totuple(a):
     try:
@@ -134,7 +135,7 @@ class ReinforceLearner(object):
             action_prob = action_prob[0]
             
             if self.env.__class__.__name__=='TicTacTeo':
-                print("It's TicTacToe-----------")
+                #print("It's TicTacToe-----------")
                 action_index = self.env.choose_action(action_prob)
             else:
                 action_index = np.random.choice(range(self.env.action_n), p=action_prob)
@@ -239,9 +240,36 @@ class ReinforceLearner(object):
             # model definition code goes here
             # and in it call
 
+    def printMid(self,Reli,Actli,Acttrajli,Stateli):
+        def printval(file,data):
+            doc = open(file,'w')
+            print(data,file = doc)
+            doc.close()
+        try:
+            printval("reli.txt",np.array(Reli))
+        except:
+            print("Reli++++",Reli)
+        try:
+            printval("Actli.txt",np.array(Actli))
+        except:
+            print("Actli+++++++",Actli)
+        try:
+            printval("acttraj.txt",np.array(Acttrajli))
+        except:
+            print("Acttrajli+++++++++",Acttrajli)
+        try:
+            printval("state.txt",np.array(Stateli))
+        except:
+            print("Stateli+++++++++++++",Stateli)
+
     def evaluate(self, repeat=5):
         results = []
+        repeat = self.repeat
         with tf.Session() as sess:
+            Reli = []
+            Actli = []
+            Acttrajli = []
+            Stateli = []
             self.setup_train(sess)
             self.agent.log(sess)
             rules = self.agent.get_predicates_definition(sess, threshold=0.05) if self.type == "DILP" else []
@@ -250,7 +278,12 @@ class ReinforceLearner(object):
                 reward_history, action_history, action_prob_history, state_history, \
                 valuation_history, valuation_index_history, input_vector_history, returns, steps, adv, final_return = e
                 results.append(final_return)
+                Reli.append(reward_history)
+                Actli.append(action_history)
+                Acttrajli.append(action_prob_history)
+                Stateli.append(state_history)
         unique, counts = np.unique(results, return_counts=True)
+        self.printMid(Reli,Actli,Acttrajli,Stateli)
         distribution =  dict(zip(unique, counts))
         return {"distribution": distribution, "mean": np.mean(results), "std": np.std(results),
                 "min": np.min(results), "max": np.max(results), "rules": rules}
@@ -317,6 +350,7 @@ class ReinforceLearner(object):
 
     def train(self):
         with tf.Session() as sess:
+            trainRes = []
             self.setup_train(sess)
             self.minibatch_buffer = self.get_minibatch_buffer(sess, batch_size=self.batch_size,
                                                               end_by_episode=self.end_by_episode)
@@ -326,6 +360,7 @@ class ReinforceLearner(object):
             disli = []
             for i in range(self.total_steps):
                 log = self.train_step(sess)
+                trainRes.append(log["return"])
                 print("-"*20)
                 print("step "+str(i)+"return is "+str(log["return"]))
                 if (i+1)%self.log_steps==0:
@@ -337,11 +372,17 @@ class ReinforceLearner(object):
                     print(dis)
                     disli.append(dis)
                     self.agent.log(sess)
-                    #if self.name:
-                    #    path = "./model/" + self.name
-                    #    self.save(sess, path)
-                    #pprint(log)
+                    if (i+1)%(self.log_steps*3)==0:
+                        if self.name:
+                            path = "./model/" + self.name
+                            self.save(sess, path)
+                        pprint(log)
                 print("-"*20+"\n")
+            try:
+                plottrain(np.array(trainRes),self.repeat,self.total_steps)
+            except:
+                print("oh,no,train....")
+            np.savetxt("trainres.txt",np.array(trainRes))
         print("WE----HAVE----DISTANCE------",disli)
         return log["return"]
 
