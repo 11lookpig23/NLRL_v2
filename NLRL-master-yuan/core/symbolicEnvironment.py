@@ -420,9 +420,10 @@ class TicTacTeo(SymbolicEnvironment):
                     j=i+1
         if len(invalids)!=0:
             p1 = (1-s/len(invalids))
+            p2 = j/len(invalids)
         else:
             p1 = 1
-        p2 = j/len(invalids)
+            p2 = 1
         return p1*p2
                 
 
