@@ -12,13 +12,13 @@ def totuple(a):
     except TypeError:
         return a
 
-Episode = namedtuple("Episode", ["reward_history", "action_history", "action_trajectory_prob", "state_history",
+Episode = namedtuple("Episode", ["pena","reward_history", "action_history", "action_trajectory_prob", "state_history",
                "valuation_history", "valuation_index_history", "input_vector_history",
                                  "returns", "steps", "advantages", "final_return"])
 
 class ReinforceLearner(object):
-    def __init__(self, agent, enviornment, learning_rate, log_steps,rep,critic=None,
-                 steps=300, name=None, discounting=1.0, batched=True, optimizer="RMSProp", end_by_episode=True,
+    def __init__(self, agent, enviornment, learning_rate, log_steps,rep, expname, critic=None,
+                 steps=300, name=None, discounting=0.9, batched=True, optimizer="RMSProp", end_by_episode=True,
                  minibatch_size=10):
         # super(ReinforceDILP, self).__init__(rules_manager, enviornment.background)
         if isinstance(agent, RLDILP):
@@ -28,6 +28,7 @@ class ReinforceLearner(object):
         else:
             self.type = "Random"
         self.env = enviornment
+        self.expname = expname
         self.agent = agent
         self.state_encoding = agent.state_encoding
         self.learning_rate = learning_rate
@@ -108,18 +109,20 @@ class ReinforceLearner(object):
         valuation_history = []
         state_history = []
         input_vector_history = []
-        excesses = []
+        pena = []
         valuation_index_history = []
         steps = []
         step = 0
         while step<max_steps:
             if self.type == "DILP":
                 indexes = self.agent.get_valuation_indexes(self.env.state2atoms(self.env.state))
+                ## 好像只有states 怎么提取出index
                 inputs = None # inputs are needed only for neural network models, so this is none
                 if self.state_encoding=="terms":
                     valuation = self.agent.base_valuation
                 else:
                     valuation = self.agent.base_valuation + self.agent.axioms2valuation(self.env.state2atoms(self.env.state))
+                    ### 是否有包含 action 还是只有state
                 action_prob,result = sess.run([self.tf_action_prob, self.agent.tf_result_valuation], feed_dict={self.agent.tf_input_valuation: [valuation],
                                                                                                                 self.tf_actions_valuation_indexes: [indexes]})
             elif self.type == "NN":
@@ -136,8 +139,10 @@ class ReinforceLearner(object):
             
             if self.env.__class__.__name__=='TicTacTeo':
                 #print("It's TicTacToe-----------")
+                penalty = self.env.penalty(action_prob)
                 action_index = self.env.choose_action(action_prob)
             else:
+                penalty = 1
                 action_index = np.random.choice(range(self.env.action_n), p=action_prob)
             if self.state_encoding == "terms":
                 action = self.env.action_index2atom(action_index)
@@ -148,6 +153,7 @@ class ReinforceLearner(object):
                     action = self.env.all_actions[action_index]
                 else:
                     action = np.random.choice(self.env.all_actions)
+            pena.append(penalty)
             steps.append(step)
             state_history.append(self.env.state)
             reward, finished = self.env.next_step(action)
@@ -171,7 +177,7 @@ class ReinforceLearner(object):
         else:
             advantages = returns
         advantages[-1] = 0.0
-        return Episode(reward_history, action_history, action_trajectory_prob, state_history,
+        return Episode(pena,reward_history, action_history, action_trajectory_prob, state_history,
                valuation_history, valuation_index_history, input_vector_history,
                        returns, steps, advantages, final_return)
 
@@ -272,10 +278,10 @@ class ReinforceLearner(object):
             Stateli = []
             self.setup_train(sess)
             self.agent.log(sess)
-            rules = self.agent.get_predicates_definition(sess, threshold=0.05) if self.type == "DILP" else []
+            rules = self.agent.get_predicates_definition(sess, threshold=0.005) if self.type == "DILP" else []
             for _ in range(repeat):
                 e = self.sample_episode(sess)
-                reward_history, action_history, action_prob_history, state_history, \
+                pena, reward_history, action_history, action_prob_history, state_history, \
                 valuation_history, valuation_index_history, input_vector_history, returns, steps, adv, final_return = e
                 results.append(final_return)
                 Reli.append(reward_history)
@@ -291,12 +297,12 @@ class ReinforceLearner(object):
     def train_step(self, sess):
         e = next(self.minibatch_buffer)
         #e = self.sample_episode(sess)
-        reward_history, action_history, action_prob_history, state_history,\
+        pena, reward_history, action_history, action_prob_history, state_history,\
             valuation_history, valuation_index_history, input_vector_history,\
             returns, steps, advantage, final_return = e
         #additional_discount = np.cumprod(self.discounting*np.ones_like(advnatage))
         #advantage = normalize(advantage)
-        additional_discount = np.ones_like(advantage)
+        additional_discount = pena #np.ones_like(advantage)
         log = {"return":final_return[0], "action_history":[str(self.env.all_actions[action_index])
                                                                for action_index in action_history]}
 
@@ -305,7 +311,7 @@ class ReinforceLearner(object):
             if self.type == "DILP":
                 feed_dict = {self.tf_advantage:np.array(advantage),
                              self.tf_additional_discount:np.array(additional_discount),
-                                 self.tf_returns:final_return,
+                                 self.tf_returns:final_return,  ###### MUCH IMPORTANT
                                  self.tf_action_index:np.array(action_history),
                                  self.tf_actions_valuation_indexes: np.array(valuation_index_history),
                                  self.agent.tf_input_valuation: np.array(valuation_history)}
@@ -379,10 +385,10 @@ class ReinforceLearner(object):
                         pprint(log)
                 print("-"*20+"\n")
             try:
-                plottrain(np.array(trainRes),self.repeat,self.total_steps)
+                plottrain(np.array(trainRes),self.repeat,self.total_steps,self.expname)
             except:
                 print("oh,no,train....")
-            np.savetxt("trainres.txt",np.array(trainRes))
+            np.savetxt(self.expname+"trainres.txt",np.array(trainRes))
         print("WE----HAVE----DISTANCE------",disli)
         return log["return"]
 
@@ -424,7 +430,7 @@ class PPOLearner(ReinforceLearner):
     def train_step(self, sess):
         e = self.minibatch_buffer.next()
         #e = self.sample_episode(sess)
-        reward_history, action_history, action_prob_history, state_history,\
+        pena, reward_history, action_history, action_prob_history, state_history,\
             valuation_history, valuation_index_history, input_vector_history,\
             returns, steps, advantage, final_return = e
 

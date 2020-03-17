@@ -3,7 +3,13 @@ from collections import OrderedDict
 import argparse
 import json
 
-def generalized_test(task, name, algo):
+def printval(file,data):
+    doc = open(file,'w')
+    print(data,file = doc)
+    doc.close()
+
+
+def generalized_test(task, name, algo, expname):
     os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
     if task == "cliffwalking":
         env = CliffWalking
@@ -33,8 +39,9 @@ def generalized_test(task, name, algo):
     for variation in [""]+list(variations):
         tf.reset_default_graph()
         print("==========="+variation+"==============")
-        result = starter(task, name, "evaluate", variation)
+        result = starter(task, name, "evaluate",expname ,variation)
         pprint(result)
+        printval(expname+"rules.txt",result)
         variation = "train" if not variation else variation
         summary[variation] = {"mean":round(result["mean"], 3), "std": round(result["std"], 3),
                               "distribution":result["distribution"]}
@@ -89,7 +96,7 @@ def start_Random(task, name, mode, variation=None):
 
 
 #@ray.remote
-def start_DILP(task, name, mode, variation=None):
+def start_DILP(task, name, mode, expname,variation=None):
     import os
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
     if task == "cliffwalking":
@@ -133,7 +140,7 @@ def start_DILP(task, name, mode, variation=None):
             critic = NeuralCritic([20], env.state_dim, 1.0, learning_rate=0.001,
                                     state2vector=env.state2vector, involve_steps=True)
         learner = ReinforceLearner(agent, env, 0.05, critic=critic,
-                                    batched=True, steps=6401, name=name,log_steps=400,rep = 100)
+                                    batched=True, steps=1601, name=name,log_steps=400,rep = 100,expname = expname)
 
     elif task == "stack":
         man, env = setup_stack(variation)
@@ -236,9 +243,10 @@ if __name__ == "__main__":
     parser.add_argument('--task')
     parser.add_argument('--algo')
     parser.add_argument('--name', default=None)
+    parser.add_argument('--expname')
     args = parser.parse_args()
     if args.mode=="generalize":
-        generalized_test(args.task, args.name, args.algo)
+        generalized_test(args.task, args.name, args.algo, args.expname)
     elif args.mode=="train":
         try:
             if args.algo == "DILP":
@@ -247,10 +255,10 @@ if __name__ == "__main__":
                 starter = start_NN
             else:
                 raise ValueError()
-            pprint(starter(args.task, args.name, args.mode))
+            pprint(starter(args.task, args.name, args.mode, args.expname))
         except Exception as e:
             #print(e.message)
             raise e
         finally:
-            generalized_test(args.task, args.name, args.algo)
+            generalized_test(args.task, args.name, args.algo, args.expname)
 

@@ -91,7 +91,7 @@ class BaseDILP(object):
                 result[i] = 1.0
         return result
 
-    def valuation2atoms(self, valuation, threshold=0.5):
+    def valuation2atoms(self, valuation, threshold=0.02):
         result = OrderedDict()
         for i, value in enumerate(valuation):
             if value >= threshold:

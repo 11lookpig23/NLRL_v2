@@ -401,6 +401,27 @@ class TicTacTeo(SymbolicEnvironment):
         self.know_valid_pos = know_valid_pos
         self.action_n = len(self.all_positions)
         self.state_dim = width**2
+    
+    def penalty(self,actprob):
+        k = 4
+        ind = np.argsort(actprob)
+        indrever = ind[::-1]
+        actionsort = self.all_actions[indrever]
+        invalids = self.get_invalid()
+        s = 0
+        j = 0
+        for i in range(k):
+            if actionsort[i] in invalids:
+                s+=1
+                if j==0:            
+                    j=i+1
+        if len(invalids)!=0:
+            p1 = (1-s/len(invalids))
+        else:
+            p1 = 1
+        p2 = j/len(invalids)
+        return p1*p2
+                
 
     def choose_action(self,actprob):
         def tuple2int(t):

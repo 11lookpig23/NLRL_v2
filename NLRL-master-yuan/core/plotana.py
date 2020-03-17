@@ -1,7 +1,7 @@
 from collections import Counter
 import numpy as np
 import matplotlib.pyplot as plt
-def plottrain(res,repeat,total_step):
+def plottrain(res,repeat,total_step,expname):
     gap = int(total_step/repeat)
     res = res[:len(res)-(len(res)%repeat)]
     out = res.reshape(gap,repeat)
@@ -11,10 +11,12 @@ def plottrain(res,repeat,total_step):
         dicfreq[-1].append(freq[-1]/repeat)
         dicfreq[1].append(freq[1]/repeat)
         dicfreq[0].append(freq[0]/repeat)
+    plt.ion()
     plt.plot(range(gap),dicfreq[1],color = 'r')
     plt.plot(range(gap),dicfreq[-1],color = 'blue')
     plt.plot(range(gap),dicfreq[0],color = 'yellow')
-    plt.savefig("trainres.png")
+    plt.savefig(expname+"trainres.png")
     plt.show()
-    plt.pause(1)
+    plt.pause(25)
     plt.close()
+    print("over------------")
