@@ -182,9 +182,9 @@ class ReinforceLearner(object):
                        returns, steps, advantages, final_return)
 
     def get_minibatch_buffer(self, sess, batch_size=50, end_by_episode=True):
-        empty_buffer = [[] for _ in range(10)]
+        empty_buffer = [[] for _ in range(11)]
         episode_buffer = deepcopy(empty_buffer)
-        sample_related_indexes = range(10)
+        sample_related_indexes = range(11)
 
         def dump_episode2buffer(episode):
             for i in sample_related_indexes:
@@ -211,6 +211,7 @@ class ReinforceLearner(object):
                         e = self.sample_episode(sess)
                         dump_episode2buffer(e)
                         final_return = e.final_return
+                        ## episode_buffer length is 10 [[e1],[e2],....[]]
             result, episode_buffer = split_buffer(episode_buffer, batch_size)
             yield Episode(*(result+[final_return]))
 
