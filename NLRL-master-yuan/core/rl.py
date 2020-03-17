@@ -93,7 +93,7 @@ class ReinforceLearner(object):
 
     def grad(self):
         loss_value = self.tf_loss
-        weight_decay = 0.0
+        weight_decay = 0.003
         regularization = 0
         for weights in self.agent.all_variables():
             weights = tf.nn.softmax(weights)
@@ -246,7 +246,7 @@ class ReinforceLearner(object):
             # model definition code goes here
             # and in it call
 
-    def printMid(self,Reli,Actli,Acttrajli,Stateli):
+    def printMid(self,Reli,Actli,Acttrajli,Stateli,penali):
         def printval(file,data):
             doc = open(file,'w')
             print(data,file = doc)
@@ -267,6 +267,10 @@ class ReinforceLearner(object):
             printval("state.txt",np.array(Stateli))
         except:
             print("Stateli+++++++++++++",Stateli)
+        try:
+            printval("pena.txt",np.array(penali))
+        except:
+            print("Stateli+++++++++++++",penali)
 
     def evaluate(self, repeat=5):
         results = []
@@ -276,6 +280,7 @@ class ReinforceLearner(object):
             Actli = []
             Acttrajli = []
             Stateli = []
+            penali = []
             self.setup_train(sess)
             self.agent.log(sess)
             rules = self.agent.get_predicates_definition(sess, threshold=0.005) if self.type == "DILP" else []
@@ -288,8 +293,9 @@ class ReinforceLearner(object):
                 Actli.append(action_history)
                 Acttrajli.append(action_prob_history)
                 Stateli.append(state_history)
+                penali.append(pena)
         unique, counts = np.unique(results, return_counts=True)
-        self.printMid(Reli,Actli,Acttrajli,Stateli)
+        self.printMid(Reli,Actli,Acttrajli,Stateli,penali)
         distribution =  dict(zip(unique, counts))
         return {"distribution": distribution, "mean": np.mean(results), "std": np.std(results),
                 "min": np.min(results), "max": np.max(results), "rules": rules}

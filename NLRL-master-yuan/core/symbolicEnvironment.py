@@ -403,15 +403,18 @@ class TicTacTeo(SymbolicEnvironment):
         self.state_dim = width**2
     
     def penalty(self,actprob):
+        def tuple2int(t):
+            return (int(t[0]), int(t[1]))
         k = 4
         ind = np.argsort(actprob)
         indrever = ind[::-1]
-        actionsort = self.all_actions[indrever]
+        actionsort = np.array(self.all_actions)[indrever]
         invalids = self.get_invalid()
         s = 0
         j = 0
         for i in range(k):
-            if actionsort[i] in invalids:
+            action = actionsort[i]
+            if tuple2int(action.terms) in invalids:
                 s+=1
                 if j==0:            
                     j=i+1
