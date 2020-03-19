@@ -209,7 +209,14 @@ def setup_on(variation=None, templete="reduced", all_block=False):
     return man, env
 
 def setup_tictacteo(variation=None):
-    env = TicTacTeo()
+    case1 = {1:[(0,1),(1,0)],-1:[(2,1),(2,2)]}
+    case2 = {1:[(0,1),(0,0)],-1:[(2,1),(2,2)]}
+    case3 = {1:[(1,1),(2,0)],-1:[(2,1),(0,2)]}
+    case4 = {1:[(0,0)],-1:[(2,0),(0,2)]}
+    case5 = {1:[(1,1)],-1:[(2,0),(2,2)]}
+    case6 = {1:[(2,0)],-1:[(0,0),(2,2)]}
+
+    env = TicTacTeo(case=case6)#case6)
     if variation:
         env = env.vary(variation)
     maintemp = [RuleTemplate(1, True)]

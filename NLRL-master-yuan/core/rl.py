@@ -309,8 +309,15 @@ class ReinforceLearner(object):
             returns, steps, advantage, final_return = e
         #additional_discount = np.cumprod(self.discounting*np.ones_like(advnatage))
         #advantage = normalize(advantage)
-        additional_discount = pena #np.ones_like(advantage)
-        log = {"return":final_return[0], "action_history":[str(self.env.all_actions[action_index])
+        ifPena = True
+        if ifPena == False:
+            discount2 = [0.5,1,2,4,6,8,8,10,10,10]
+            additional_discount = pena #np.ones_like(advantage)
+            for i in range(len(additional_discount)):
+                additional_discount[i] = pena[i]*discount2[i]
+        else:
+            additional_discount = np.ones_like(advantage)
+        log = {"addReward":np.sum(advantage*additional_discount) ,"return":final_return[0], "action_history":[str(self.env.all_actions[action_index])
                                                                for action_index in action_history]}
 
         if self.batched:
@@ -375,7 +382,7 @@ class ReinforceLearner(object):
                 log = self.train_step(sess)
                 trainRes.append(log["return"])
                 print("-"*20)
-                print("step "+str(i)+"return is "+str(log["return"]))
+                print("step "+str(i)+" return is "+str(log["return"]+ "  addReward is " +str(log[addReward])))
                 if (i+1)%self.log_steps==0:
                     resl = self.agent.get_predicate_definition(sess, Predicate("place", 2), threshold=-200000.0)
                     weightall1 = [x[0] for x in resl]
