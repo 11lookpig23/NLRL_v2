@@ -209,6 +209,8 @@ def setup_on(variation=None, templete="reduced", all_block=False):
     return man, env
 
 def setup_tictacteo(variation=None):
+    #from core.clause import *
+    #from core.ilp import LanguageFrame
     case1 = {1:[(0,1),(1,0)],-1:[(2,1),(2,2)]}
     case2 = {1:[(0,1),(0,0)],-1:[(2,1),(2,2)]}
     case3 = {1:[(1,1),(2,0)],-1:[(2,1),(0,2)]}
@@ -234,5 +236,21 @@ def setup_tictacteo(variation=None):
                                     invented4: inventedtemp_2extential
                                     }, 4)
     man = RulesManager(env.language, program_temp)
+    cla = man.all_clauses
+    Pla = cla[Predicate(name='place', arity=2)]
+    def cond(cla):
+        a = (cla.body[0].predicate == Predicate(name='mine', arity=2)) and ( cla.body[0].terms == cla.head.terms )
+        b = (cla.body[1].predicate == Predicate(name='mine', arity=2)) and ( cla.body[1].terms == cla.head.terms )
+        c = (cla.body[0].predicate == Predicate(name='opponent', arity=2)) and ( cla.body[0].terms == cla.head.terms )
+        d = (cla.body[1].predicate == Predicate(name='opponent', arity=2)) and ( cla.body[1].terms == cla.head.terms )
+        if ( a or b or c or d) == True:
+            print("invalid----", cla)
+            return True
+        return False
+    for cl in Pla[0]:
+        k = cond(cl)
+        if k:
+            Pla[0].remove(cl)
+    man.all_clauses[Predicate(name='place', arity=2)] = [Pla[0]]
     return man, env
 

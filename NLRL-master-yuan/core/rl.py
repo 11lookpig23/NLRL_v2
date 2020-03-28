@@ -392,7 +392,7 @@ class ReinforceLearner(object):
                     print(dis)
                     disli.append(dis)
                     self.agent.log(sess)
-                    if (i+1)%(self.log_steps*3)==0:
+                    if (i+1)%(self.log_steps*2)==0:
                         if self.name:
                             path = "./model/" + self.name
                             self.save(sess, path)
